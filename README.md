@@ -12,4 +12,6 @@ To make this program work, you need to make sure that the first Edge process is 
 
 If you launch Edge by any other method, either through task bar, the Start menu, desktop icon, or by opening a link when Edge is the default browser, or by opening a file associated with Edge, this program will not work.
 
+To download the program, check the [Releases](https://github.com/gexgd0419/EdgeWindowTabManagerBlock/releases) section on the right.
+
 If anyone has some idea about how I can make the program work without manually starting the program every time I want to launch Edge, feel free to let me know.
