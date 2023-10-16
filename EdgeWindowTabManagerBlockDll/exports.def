@@ -1,0 +1,3 @@
+LIBRARY EdgeWindowTabManagerBlockDll
+EXPORTS
+	DetourFinishHelperProcess @1 NONAME
