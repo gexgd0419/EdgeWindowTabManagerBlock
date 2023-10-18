@@ -141,6 +141,12 @@
     <None Include="exports.def" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="EdgeWindowTabManagerBlockDll.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\Detours.4.0.1\build\native\Detours.targets" Condition="Exists('..\packages\Detours.4.0.1\build\native\Detours.targets')" />

@@ -3,12 +3,13 @@
 #include <detours.h>
 #include <stdio.h>
 #include <DbgHelp.h>
+#include "resource.h"
 #pragma comment (lib, "dbghelp.lib")
 
-void ReportError(LPCWSTR lpMessage, DWORD errorCode = 0)
+void ReportError(UINT idMessage, DWORD errorCode = 0)
 {
 	WCHAR buffer[1024] = { 0 };
-	wcscpy_s(buffer, lpMessage);
+	LoadStringW(NULL, idMessage, buffer, 1024);
 	
 	if (errorCode != 0)
 	{
@@ -75,7 +76,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 		RRF_RT_REG_SZ, NULL, szEdgePath, &cb);
 	if (err != ERROR_SUCCESS)
 	{
-		ReportError(L"Cannot query the installation path of Microsoft Edge.", err);
+		ReportError(IDS_GET_EDGE_PATH_FAILED, err);
 		return HRESULT_FROM_WIN32(err);
 	}
 
@@ -83,7 +84,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 	if (wEdgeBinaryType == 0)
 	{
 		err = GetLastError();
-		ReportError(L"Cannot query the executable type of Microsoft Edge.", err);
+		ReportError(IDS_GET_EDGE_BIN_TYPE_FAILED, err);
 		return HRESULT_FROM_WIN32(err);
 	}
 
@@ -101,19 +102,19 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 	{
 		err = GetLastError();
 		if (err == ERROR_FILE_NOT_FOUND)
-			ReportError(L"EdgeWindowTabManagerBlockDll.dll does not exist. It should be in the same directory as this program.");
+			ReportError(IDS_DLL_NOT_FOUND);
 		else
-			ReportError(L"Cannot query the executable type of EdgeWindowTabManagerBlockDll.dll.", err);
+			ReportError(IDS_GET_DLL_BIN_TYPE_FAILED, err);
 		return HRESULT_FROM_WIN32(err);
 	}
 	if (wEdgeBinaryType != wDllBinaryType)
 	{
 		if (wEdgeBinaryType == IMAGE_FILE_MACHINE_AMD64)
-			ReportError(L"The Microsoft Edge on your system is 64-bit. Please use the 64-bit version of this program.");
+			ReportError(IDS_EDGE_64BIT_NOT_MATCH);
 		else if (wEdgeBinaryType == IMAGE_FILE_MACHINE_I386)
-			ReportError(L"The Microsoft Edge on your system is 32-bit. Please use the 32-bit version of this program.");
+			ReportError(IDS_EDGE_32BIT_NOT_MATCH);
 		else
-			ReportError(L"The Microsoft Edge on your system has an unsupported binary type.");
+			ReportError(IDS_EDGE_UNKNOWN_BIN_TYPE);
 		return HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT);
 	}
 
@@ -127,7 +128,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 		szDllPath, NULL))
 	{
 		err = GetLastError();
-		ReportError(L"Cannot launch Microsoft Edge process with injected DLL.", err);
+		ReportError(IDS_INJECT_DLL_FAILED, err);
 		return HRESULT_FROM_WIN32(err);
 	}
 
