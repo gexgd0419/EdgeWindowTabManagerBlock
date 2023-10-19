@@ -11,7 +11,8 @@ bool IsRoClassBlocked(HSTRING activatableClassId)
 {
     PCWSTR pszClassId = ::WindowsGetStringRawBuffer(activatableClassId, nullptr);
 
-    if (wcsstr(pszClassId, L"WindowTabManager") != NULL)
+    if (wcscmp(pszClassId, L"WindowsUdk.UI.Shell.WindowTabManager") == 0
+        || wcscmp(pszClassId, L"Windows.UI.Shell.WindowTabManager") == 0) // case sensitive
         return true;
 
     return false;
