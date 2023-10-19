@@ -18,6 +18,9 @@
     <ClCompile Include="source.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="..\procutils.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

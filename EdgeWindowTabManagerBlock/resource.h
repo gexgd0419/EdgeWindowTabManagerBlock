@@ -12,6 +12,7 @@
 #define IDS_EDGE_UNKNOWN_BIN_TYPE       108
 #define IDS_INJECT_DLL_FAILED           109
 #define IDS_EDGE_64BIT_NOT_MATCH2       110
+#define IDS_EDGE_WITH_WTM_RUNNING       110
 
 // Next default values for new objects
 // 

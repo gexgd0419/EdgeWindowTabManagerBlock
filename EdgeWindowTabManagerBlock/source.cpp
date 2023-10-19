@@ -67,6 +67,8 @@ WORD GetExecutableMachineType(LPCSTR lpFile)
 	return result;
 }
 
+DWORD FindEdgeProcessWithWindowTabManager();
+
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 {
 	WCHAR szEdgePath[MAX_PATH] = { 0 };
@@ -116,6 +118,20 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 		else
 			ReportError(IDS_EDGE_UNKNOWN_BIN_TYPE);
 		return HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT);
+	}
+
+	if (FindEdgeProcessWithWindowTabManager() != 0)
+	{
+		WCHAR msg[256] = { 0 };
+		LoadStringW(NULL, IDS_EDGE_WITH_WTM_RUNNING, msg, 256);
+		do
+		{
+			int ret = MessageBoxW(NULL, msg, L"EdgeWindowTabManagerBlock", MB_CANCELTRYCONTINUE + MB_ICONEXCLAMATION);
+			if (ret == IDCANCEL)
+				return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+			else if (ret == IDCONTINUE)
+				break;
+		} while (FindEdgeProcessWithWindowTabManager() != 0);
 	}
 
 	WCHAR szCmdLine[8192] = { 0 };
