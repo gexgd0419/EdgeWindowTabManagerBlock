@@ -78,8 +78,13 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 		RRF_RT_REG_SZ, NULL, szEdgePath, &cb);
 	if (err != ERROR_SUCCESS)
 	{
-		ReportError(IDS_GET_EDGE_PATH_FAILED, err);
-		return HRESULT_FROM_WIN32(err);
+		err = RegGetValueW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\App Paths\\msedge.exe", NULL,
+			RRF_RT_REG_SZ, NULL, szEdgePath, &cb);
+		if (err != ERROR_SUCCESS)
+		{
+			ReportError(IDS_GET_EDGE_PATH_FAILED, err);
+			return HRESULT_FROM_WIN32(err);
+		}
 	}
 
 	WORD wEdgeBinaryType = GetExecutableMachineType(szEdgePath);
