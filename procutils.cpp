@@ -59,7 +59,7 @@ static std::wstring GetProcessCommandLine(DWORD pid)
 
 static bool DoesProcessHaveWindowTabManager(DWORD pid)
 {
-    Handle hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid);
+    HFile hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid);
     if (hSnap == INVALID_HANDLE_VALUE)
         return false;
     MODULEENTRY32W me = { sizeof me };
@@ -91,7 +91,7 @@ static BOOL CALLBACK EnumThreadWindowsProc(HWND hwnd, LPARAM lparam)
 
 static bool HasVisibleEdgeWindows(DWORD pid)
 {
-    Handle hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0); // all threads are included
+    HFile hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0); // all threads are included
     if (hSnap == INVALID_HANDLE_VALUE)
         return false;
     THREADENTRY32 te = { sizeof te };
@@ -113,7 +113,7 @@ static bool HasVisibleEdgeWindows(DWORD pid)
 // Returns the main Edge process which is using WindowTabManager. Returns 0 if not found.
 DWORD FindEdgeProcessWithWindowTabManager()
 {
-    Handle hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    HFile hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hSnap == INVALID_HANDLE_VALUE)
         return 0;
 

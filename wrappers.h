@@ -2,21 +2,26 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-class Handle
+template <typename THandle, typename TCloseFunc, TCloseFunc CloseFunc, THandle ZeroValue = THandle()>
+class HandleWrapper
 {
 private:
-	HANDLE m_handle;
+	THandle m_handle;
 public:
-	Handle() : m_handle(NULL) {}
-	Handle(HANDLE handle) : m_handle(handle) {}
-	~Handle()
+	HandleWrapper() : m_handle(ZeroValue) {}
+	HandleWrapper(THandle handle) : m_handle(handle) {}
+	~HandleWrapper()
 	{
-		if (m_handle != NULL && m_handle != INVALID_HANDLE_VALUE)
-			CloseHandle(m_handle);
+		if (m_handle != ZeroValue)
+			CloseFunc(m_handle);
 	}
-	Handle(const Handle&) = delete;
-	Handle& operator=(const Handle&) = delete;
+	HandleWrapper(const HandleWrapper&) = delete;
+	HandleWrapper& operator=(const HandleWrapper&) = delete;
 
-	operator HANDLE() { return m_handle; }
-	HANDLE* operator&() { return &m_handle; }
+	operator THandle() { return m_handle; }
+	THandle* operator&() { return &m_handle; }
 };
+
+typedef HandleWrapper<HANDLE, decltype(CloseHandle), CloseHandle> Handle;
+typedef HandleWrapper<HANDLE, decltype(CloseHandle), CloseHandle, INVALID_HANDLE_VALUE> HFile;
+typedef HandleWrapper<HKEY, decltype(RegCloseKey), RegCloseKey> HKey;
