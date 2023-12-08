@@ -81,7 +81,7 @@ static BOOL CALLBACK EnumThreadWindowsProc(HWND hwnd, LPARAM lparam)
     {
         WCHAR szClass[32];
         GetClassNameW(hwnd, szClass, 32);
-        if (wcscmp(szClass, L"Chrome_WidgetWin_1") == 0)
+        if (wcscmp(szClass, L"Chrome_WidgetWin_1") != 0)
             return TRUE; // continue enumeration
     }
 
