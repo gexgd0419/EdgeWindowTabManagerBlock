@@ -3,8 +3,11 @@
 #include <detours.h>
 #include <stdio.h>
 #include <DbgHelp.h>
+#include <Shlwapi.h>
+#include <string>
 #include "resource.h"
 #pragma comment (lib, "dbghelp.lib")
+#pragma comment (lib, "shlwapi.lib")
 
 void ReportError(UINT idMessage, DWORD errorCode = 0)
 {
@@ -68,25 +71,50 @@ WORD GetExecutableMachineType(LPCSTR lpFile)
 }
 
 DWORD FindEdgeProcessWithWindowTabManager();
+bool ShowChooseEdgeVersionDlg();
+std::wstring GetEdgePath();
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 {
-	WCHAR szEdgePath[MAX_PATH] = { 0 };
+	WCHAR szEdgePath[MAX_PATH] = { 0 };	
 	DWORD cb = sizeof szEdgePath;
 
-	LSTATUS err = RegGetValueW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\msedge.exe", NULL,
-		RRF_RT_REG_SZ, NULL, szEdgePath, &cb);
-	if (err != ERROR_SUCCESS)
+	// The first parameter can be a msedge.exe path. Check whether it is or not
+
+	bool edgePathInCmdLine = false;
+	LPWSTR lpRemainCmdLine = PathGetArgsW(lpCmdLine); // points to the 2nd parameter
+
+	// Check if the first parameter is a path to msedge.exe
+	wcsncpy_s(szEdgePath, lpCmdLine, lpRemainCmdLine - lpCmdLine); // copy the first parameter
+	PathRemoveBlanksW(szEdgePath);
+	PathUnquoteSpacesW(szEdgePath);
+	if (StrCmpIW(PathFindFileNameW(szEdgePath), L"msedge.exe") == 0)
 	{
-		err = RegGetValueW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\App Paths\\msedge.exe", NULL,
-			RRF_RT_REG_SZ, NULL, szEdgePath, &cb);
-		if (err != ERROR_SUCCESS)
-		{
-			ReportError(IDS_GET_EDGE_PATH_FAILED, err);
-			return HRESULT_FROM_WIN32(err);
-		}
+		lpCmdLine = lpRemainCmdLine;
+		edgePathInCmdLine = true;
 	}
 
+	if (!edgePathInCmdLine)
+	{
+		if (GetAsyncKeyState(VK_CONTROL) & 0x8000)
+			Sleep(1000); // if CTRL pressed now, wait for a second to test again
+
+		// try to fetch Edge path from the registry
+		std::wstring edgePath;
+
+		if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) == 0)
+			edgePath = GetEdgePath(); // if CTRL not pressed, fetch Edge path from the registry
+
+		while (edgePath.empty()) // loop until a valid path is selected
+		{
+			if (!ShowChooseEdgeVersionDlg())
+				return HRESULT_FROM_WIN32(ERROR_CANCELLED); // quit on dialog cancellation
+			edgePath = GetEdgePath();
+		}
+		wcscpy_s(szEdgePath, edgePath.c_str());
+	}
+
+	LRESULT err;
 	WORD wEdgeBinaryType = GetExecutableMachineType(szEdgePath);
 	if (wEdgeBinaryType == 0)
 	{
@@ -97,12 +125,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 
 	char szDllPath[MAX_PATH];
 	GetModuleFileNameA(NULL, szDllPath, MAX_PATH);
-	char* pCh = strrchr(szDllPath, '\\');
-	if (pCh)
-		*pCh = '\0';
-	else
-		szDllPath[0] = '\0';
-	strcat_s(szDllPath, "\\EdgeWindowTabManagerBlockDll.dll");
+	PathRemoveFileSpecA(szDllPath);
+	PathAppendA(szDllPath, "EdgeWindowTabManagerBlockDll.dll");
 
 	WORD wDllBinaryType = GetExecutableMachineType(szDllPath);
 	if (wDllBinaryType == 0)

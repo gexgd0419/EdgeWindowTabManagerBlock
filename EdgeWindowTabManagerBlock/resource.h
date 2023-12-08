@@ -13,6 +13,10 @@
 #define IDS_INJECT_DLL_FAILED           109
 #define IDS_EDGE_64BIT_NOT_MATCH2       110
 #define IDS_EDGE_WITH_WTM_RUNNING       110
+#define IDS_CHOOSE_EDGE_VER             111
+#define IDS_FOLLOW_DEFAULT_BROWSER      112
+#define IDS_BROWSE_FOR_EDGE_EXE         113
+#define IDS_CHOOSE_EDGE_DLG_TIP         114
 
 // Next default values for new objects
 // 
