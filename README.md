@@ -1,5 +1,17 @@
 # EdgeWindowTabManagerBlock
 
+**UPDATE:**
+
+The flag to disable the WindowTabManager in Edge, `#edge-window-tab-manager`, is back on version 120.0.2210.61. (Issue [#3](https://github.com/gexgd0419/EdgeWindowTabManagerBlock/issues/3))
+
+Type `edge://flags` in the address bar. Search for `#edge-window-tab-manager`, then set `Browser tab experiences in Windows` to Disabled.
+
+After that, you can get rid of the problems this program is trying to solve, and you won't need to use this program to launch Edge anymore.
+
+As long as this flag doesn't get removed again.
+
+---
+
 A program that blocks the WindowTabManager feature of Microsoft Edge, when you launch Edge through this program.
 
 This WindowTabManager feature, supposedly, enables Microsoft Edge to show its tabs in Alt-Tab view. However, it has a bug that can slow down Explorer and make Explorer unstable when you have enough Edge tabs open.
