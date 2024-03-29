@@ -2,13 +2,7 @@
 
 **UPDATE:**
 
-The flag to disable the WindowTabManager in Edge, `#edge-window-tab-manager`, is back on version 120.0.2210.61. (Issue [#3](https://github.com/gexgd0419/EdgeWindowTabManagerBlock/issues/3))
-
-Type `edge://flags` in the address bar. Search for `#edge-window-tab-manager`, then set `Browser tab experiences in Windows` to Disabled.
-
-After that, you can get rid of the problems this program is trying to solve, and you won't need to use this program to launch Edge anymore.
-
-As long as this flag doesn't get removed again.
+On Edge version 123.0.2420.53, the flag `#edge-window-tab-manager` got removed again. This program should still work.
 
 ---
 
