@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by EdgeWindowTabManagerBlock.rc
+// Microsoft Visual C++ 生成的包含文件。
+// 供 EdgeWindowTabManagerBlock.rc 使用
 //
 #define IDS_PROGRAMNAME                 101
 #define IDS_GET_EDGE_PATH_FAILED        102
@@ -17,6 +17,16 @@
 #define IDS_FOLLOW_DEFAULT_BROWSER      112
 #define IDS_BROWSE_FOR_EDGE_EXE         113
 #define IDS_CHOOSE_EDGE_DLG_TIP         114
+#define IDS_REGISTER_DEBUGGER_ASK       115
+#define IDS_REGISTER_DEBUGGER_REASON    116
+#define IDS_REGISTER_AS_DEBUGGER        117
+#define IDS_DO_NOT_REGISTER             118
+#define IDS_ASK_ME_LATER                119
+#define IDS_REGISTRATION_COMPLETED      120
+#define IDS_REGISTRATION_FAILED         121
+#define IDS_UNREGISTRATION_COMPLETED    122
+#define IDS_UNREGISTRATION_FAILED       123
+#define IDS_REGISTER_DLG_TIP            124
 
 // Next default values for new objects
 // 

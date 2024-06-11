@@ -3,9 +3,19 @@
 #include <wrl.h>
 #include <detours.h>
 #pragma comment (lib, "runtimeobject.lib")
+#include <Shlwapi.h>
+#pragma comment (lib, "shlwapi.lib")
 
-static HRESULT (WINAPI *Real_RoGetActivationFactory)(HSTRING activatableClassId, REFIID iid, void** factory) = RoGetActivationFactory;
-static HRESULT (WINAPI *Real_RoActivateInstance)(HSTRING activatableClassId, IInspectable** instance) = RoActivateInstance;
+#define DEFINE_HOOK(func) static decltype(func)* Real_##func = func
+#define ATTACH_HOOK(func) DetourAttach((PVOID*)&Real_##func, My_##func)
+#define DETACH_HOOK(func) DetourDetach((PVOID*)&Real_##func, My_##func)
+
+DEFINE_HOOK(RoGetActivationFactory);
+DEFINE_HOOK(RoActivateInstance);
+DEFINE_HOOK(CreateProcessW);
+DEFINE_HOOK(CreateProcessAsUserW);
+
+static char szThisDllPath[MAX_PATH];
 
 bool IsRoClassBlocked(HSTRING activatableClassId)
 {
@@ -17,7 +27,6 @@ bool IsRoClassBlocked(HSTRING activatableClassId)
 
     return false;
 }
-
 
 HRESULT WINAPI My_RoGetActivationFactory(HSTRING activatableClassId, REFIID iid, void** factory)
 {
@@ -33,6 +42,101 @@ HRESULT WINAPI My_RoActivateInstance(HSTRING activatableClassId, IInspectable** 
     return Real_RoActivateInstance(activatableClassId, instance);
 }
 
+bool IsEdge(LPWSTR lpCommandLine)
+{
+    LPWSTR path = _wcsdup(lpCommandLine);
+    if (!path) return false;
+    PathRemoveArgsW(path);
+    PathRemoveBlanksW(path);
+    PathUnquoteSpacesW(path);
+    int ret = StrCmpIW(PathFindFileNameW(path), L"msedge.exe");
+    free(path);
+    return ret == 0;
+}
+
+BOOL WINAPI My_CreateProcessW(
+    _In_opt_ LPCWSTR lpApplicationName,
+    _Inout_opt_ LPWSTR lpCommandLine,
+    _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+    _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    _In_ BOOL bInheritHandles,
+    _In_ DWORD dwCreationFlags,
+    _In_opt_ LPVOID lpEnvironment,
+    _In_opt_ LPCWSTR lpCurrentDirectory,
+    _In_ LPSTARTUPINFOW lpStartupInfo,
+    _Out_ LPPROCESS_INFORMATION lpProcessInformation
+)
+{
+    // We only care about Edge sub-processes
+    if (!lpCommandLine || !IsEdge(lpCommandLine))
+        return Real_CreateProcessW(lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes,
+            bInheritHandles, dwCreationFlags,
+            lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation);
+
+    // Bypass IFEO for sub-process creation
+    if (!Real_CreateProcessW(lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes,
+        bInheritHandles, dwCreationFlags | DEBUG_ONLY_THIS_PROCESS | CREATE_SUSPENDED,
+        lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation))
+        return FALSE;
+
+    DebugActiveProcessStop(lpProcessInformation->dwProcessId);
+
+    // Inject this DLL into sub-processes as well
+    // but not into things like renderers because they are protected
+    if (wcsstr(lpCommandLine, L"--type=") == nullptr)
+    {
+        LPCSTR pDllPath = szThisDllPath;
+        DetourUpdateProcessWithDll(lpProcessInformation->hProcess, &pDllPath, 1);
+    }
+
+    if (!(dwCreationFlags & CREATE_SUSPENDED))
+        ResumeThread(lpProcessInformation->hThread);
+
+    return TRUE;
+}
+
+BOOL WINAPI My_CreateProcessAsUserW(
+    _In_opt_ HANDLE hToken,
+    _In_opt_ LPCWSTR lpApplicationName,
+    _Inout_opt_ LPWSTR lpCommandLine,
+    _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+    _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    _In_ BOOL bInheritHandles,
+    _In_ DWORD dwCreationFlags,
+    _In_opt_ LPVOID lpEnvironment,
+    _In_opt_ LPCWSTR lpCurrentDirectory,
+    _In_ LPSTARTUPINFOW lpStartupInfo,
+    _Out_ LPPROCESS_INFORMATION lpProcessInformation
+)
+{
+    // We only care about Edge sub-processes
+    if (!lpCommandLine || !IsEdge(lpCommandLine))
+        return Real_CreateProcessAsUserW(hToken, lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes,
+            bInheritHandles, dwCreationFlags,
+            lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation);
+
+    // Bypass IFEO for sub-process creation
+    if (!Real_CreateProcessAsUserW(hToken, lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes,
+        bInheritHandles, dwCreationFlags | DEBUG_ONLY_THIS_PROCESS | CREATE_SUSPENDED,
+        lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation))
+        return FALSE;
+
+    DebugActiveProcessStop(lpProcessInformation->dwProcessId);
+
+    // Inject this DLL into sub-processes as well
+    // but not into things like renderers because they are protected
+    if (wcsstr(lpCommandLine, L"--type=") == nullptr)
+    {
+        LPCSTR pDllPath = szThisDllPath;
+        DetourUpdateProcessWithDll(lpProcessInformation->hProcess, &pDllPath, 1);
+    }
+
+    if (!(dwCreationFlags & CREATE_SUSPENDED))
+        ResumeThread(lpProcessInformation->hThread);
+
+    return TRUE;
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID)
 {
     if (DetourIsHelperProcess())
@@ -41,19 +145,24 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID)
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
+        GetModuleFileNameA(hModule, szThisDllPath, MAX_PATH);
         DetourRestoreAfterWith();
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach((PVOID*)&Real_RoGetActivationFactory, My_RoGetActivationFactory);
-        DetourAttach((PVOID*)&Real_RoActivateInstance, My_RoActivateInstance);
+        ATTACH_HOOK(RoGetActivationFactory);
+        ATTACH_HOOK(RoActivateInstance);
+        ATTACH_HOOK(CreateProcessW);
+        ATTACH_HOOK(CreateProcessAsUserW);
         DetourTransactionCommit();
         break;
 
     case DLL_PROCESS_DETACH:
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourDetach((PVOID*)&Real_RoGetActivationFactory, My_RoGetActivationFactory);
-        DetourDetach((PVOID*)&Real_RoActivateInstance, My_RoActivateInstance);
+        DETACH_HOOK(RoGetActivationFactory);
+        DETACH_HOOK(RoActivateInstance);
+        DETACH_HOOK(CreateProcessW);
+        DETACH_HOOK(CreateProcessAsUserW);
         DetourTransactionCommit();
         break;
     }
