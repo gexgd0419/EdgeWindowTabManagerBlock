@@ -27,6 +27,7 @@
 #define IDS_UNREGISTRATION_COMPLETED    122
 #define IDS_UNREGISTRATION_FAILED       123
 #define IDS_REGISTER_DLG_TIP            124
+#define IDS_REGISTER_EXIT_EDGE          125
 
 // Next default values for new objects
 // 

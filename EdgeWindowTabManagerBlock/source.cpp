@@ -80,6 +80,7 @@ WORD GetExecutableMachineType(LPCSTR lpFile)
 }
 
 DWORD FindEdgeProcessWithWindowTabManager();
+DWORD FindMainEdgeProcess();
 bool ShowChooseEdgeVersionDlg();
 std::wstring GetEdgePath();
 
@@ -169,6 +170,19 @@ bool ShowInstallDebuggerDlg(bool force)
 	switch (sel)
 	{
 	case IDYES:
+		if (FindMainEdgeProcess() != 0)
+		{
+			std::wstring msg = LoadResString(IDS_REGISTER_EXIT_EDGE);
+			do
+			{
+				int ret = MessageBoxW(NULL, msg.c_str(), L"EdgeWindowTabManagerBlock", MB_CANCELTRYCONTINUE + MB_ICONEXCLAMATION);
+				if (ret == IDCANCEL)
+					return false;
+				else if (ret == IDCONTINUE)
+					break;
+			} while (FindMainEdgeProcess() != 0);
+		}
+
 		// launch itself elevated to perform installation
 		WCHAR path[MAX_PATH];
 		GetModuleFileNameW(nullptr, path, MAX_PATH);

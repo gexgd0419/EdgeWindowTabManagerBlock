@@ -110,8 +110,8 @@ static bool HasVisibleEdgeWindows(DWORD pid)
     return false;
 }
 
-// Returns the main Edge process which is using WindowTabManager. Returns 0 if not found.
-DWORD FindEdgeProcessWithWindowTabManager()
+// Returns the main Edge process ID. Returns 0 if not found.
+DWORD FindMainEdgeProcess(bool withWindowTabManager)
 {
     HFile hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hSnap == INVALID_HANDLE_VALUE)
@@ -132,7 +132,7 @@ DWORD FindEdgeProcessWithWindowTabManager()
         if (cmdLine.find(L"--type=") != std::wstring::npos) // do not include Edge subprocesses
             continue;
 
-        if (DoesProcessHaveWindowTabManager(pe.th32ProcessID))
+        if (!withWindowTabManager || DoesProcessHaveWindowTabManager(pe.th32ProcessID))
         {
             // if it's launched by Startup Boost, and is running in the background
             // (there are no visible Edge windows open),
@@ -152,4 +152,15 @@ DWORD FindEdgeProcessWithWindowTabManager()
     } while (Process32NextW(hSnap, &pe));
 
     return 0;
+}
+
+// Returns the main Edge process which is using WindowTabManager. Returns 0 if not found.
+DWORD FindEdgeProcessWithWindowTabManager()
+{
+    return FindMainEdgeProcess(true);
+}
+
+DWORD FindMainEdgeProcess()
+{
+    return FindMainEdgeProcess(false);
 }
