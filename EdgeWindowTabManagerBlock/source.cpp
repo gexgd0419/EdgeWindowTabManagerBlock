@@ -11,6 +11,13 @@
 #pragma comment (lib, "dbghelp.lib")
 #pragma comment (lib, "shlwapi.lib")
 
+std::wstring LoadResString(UINT id)
+{
+	LPCWSTR p;
+	int cch = LoadStringW(nullptr, id, (LPWSTR)&p, 0);
+	return std::wstring(p, cch);
+}
+
 void ReportError(UINT idMessage, DWORD errorCode = 0)
 {
 	WCHAR buffer[1024] = { 0 };
@@ -97,7 +104,7 @@ LSTATUS AddUninstallRegistryKey()
 	wcscat_s(uninstallCmdLine, L" --uninstall-ifeo-debugger");
 
 	if (err == ERROR_SUCCESS) err = WriteRegSZ(hKey, L"DisplayName", L"EdgeWindowTabManagerBlock (as Edge debugger)");
-	if (err == ERROR_SUCCESS) err = WriteRegSZ(hKey, L"DisplayVersion", L"0.1");
+	if (err == ERROR_SUCCESS) err = WriteRegSZ(hKey, L"DisplayVersion", L"0.4");
 	if (err == ERROR_SUCCESS) err = WriteRegSZ(hKey, L"Publisher", L"gexgd0419 on GitHub");
 	if (err == ERROR_SUCCESS) err = WriteRegSZ(hKey, L"UninstallString", uninstallCmdLine);
 	if (err == ERROR_SUCCESS) err = WriteRegSZ(hKey, L"HelpLink", L"https://github.com/gexgd0419/EdgeWindowTabManagerBlock");
@@ -209,9 +216,7 @@ int DoInstall()
 		return HRESULT_FROM_WIN32(err);
 	}
 
-	WCHAR msg[256] = { 0 };
-	LoadStringW(NULL, IDS_REGISTRATION_COMPLETED, msg, 256);
-	MessageBoxW(NULL, msg, L"EdgeWindowTabManagerBlock", MB_ICONINFORMATION);
+	MessageBoxW(NULL, LoadResString(IDS_REGISTRATION_COMPLETED).c_str(), L"EdgeWindowTabManagerBlock", MB_ICONINFORMATION);
 	return 0;
 }
 
@@ -220,9 +225,12 @@ int DoUninstall()
 	HKEY hKey;
 	LSTATUS err = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\msedge.exe",
 		0, KEY_QUERY_VALUE | KEY_SET_VALUE, &hKey);
+
+	if (err == ERROR_SUCCESS)
+		err = RegDeleteValueW(hKey, L"Debugger");
+
 	if (err == ERROR_SUCCESS)
 	{
-		RegDeleteValueW(hKey, L"Debugger");
 		DWORD valueCount = 1;
 		RegQueryInfoKeyW(hKey, nullptr, nullptr, nullptr, &valueCount, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 		RegCloseKey(hKey);
@@ -242,9 +250,7 @@ int DoUninstall()
 		return HRESULT_FROM_WIN32(err);
 	}
 
-	WCHAR msg[256] = { 0 };
-	LoadStringW(NULL, IDS_UNREGISTRATION_COMPLETED, msg, 256);
-	MessageBoxW(NULL, msg, L"EdgeWindowTabManagerBlock", MB_ICONINFORMATION);
+	MessageBoxW(NULL, LoadResString(IDS_UNREGISTRATION_COMPLETED).c_str(), L"EdgeWindowTabManagerBlock", MB_ICONINFORMATION);
 	return 0;
 }
 
@@ -355,11 +361,10 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 
 	if (FindEdgeProcessWithWindowTabManager() != 0)
 	{
-		WCHAR msg[256] = { 0 };
-		LoadStringW(NULL, IDS_EDGE_WITH_WTM_RUNNING, msg, 256);
+		std::wstring msg = LoadResString(IDS_EDGE_WITH_WTM_RUNNING);
 		do
 		{
-			int ret = MessageBoxW(NULL, msg, L"EdgeWindowTabManagerBlock", MB_CANCELTRYCONTINUE + MB_ICONEXCLAMATION);
+			int ret = MessageBoxW(NULL, msg.c_str(), L"EdgeWindowTabManagerBlock", MB_CANCELTRYCONTINUE + MB_ICONEXCLAMATION);
 			if (ret == IDCANCEL)
 				return HRESULT_FROM_WIN32(ERROR_CANCELLED);
 			else if (ret == IDCONTINUE)
@@ -367,8 +372,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 		} while (FindEdgeProcessWithWindowTabManager() != 0);
 	}
 
-	WCHAR szCmdLine[8192] = { 0 };
-	swprintf_s(szCmdLine, L"\"%s\" %s", szEdgePath, lpCmdLine);
+	LPWSTR cmdLine = new WCHAR[8192]();
+	swprintf_s(cmdLine, 8192, L"\"%s\" %s", szEdgePath, lpCmdLine);
 
 	STARTUPINFOW si = { sizeof si };
 	GetStartupInfoW(&si);
@@ -378,15 +383,18 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 	si.lpReserved2 = 0;
 	PROCESS_INFORMATION pi;
 
-	if (!DetourCreateProcessWithDllW(szEdgePath, szCmdLine, NULL, NULL, TRUE,
+	if (!DetourCreateProcessWithDllW(szEdgePath, cmdLine, NULL, NULL, TRUE,
 		DEBUG_ONLY_THIS_PROCESS,  // avoid recursively launching itself when set as the IFEO debugger of msedge
 		NULL, NULL, &si, &pi,
 		szDllPath, NULL))
 	{
 		err = GetLastError();
+		delete[] cmdLine;
 		ReportError(IDS_INJECT_DLL_FAILED, err);
 		return HRESULT_FROM_WIN32(err);
 	}
+
+	delete[] cmdLine;
 
 	// we don't want to actually debug, so detach it immediately
 	DebugActiveProcessStop(pi.dwProcessId);
