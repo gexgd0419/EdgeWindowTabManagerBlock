@@ -28,12 +28,13 @@
 #define IDS_UNREGISTRATION_FAILED       123
 #define IDS_REGISTER_DLG_TIP            124
 #define IDS_REGISTER_EXIT_EDGE          125
+#define IDS_EDGE_ARM64_NOT_MATCH        126
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        102
+#define _APS_NEXT_RESOURCE_VALUE        126
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101

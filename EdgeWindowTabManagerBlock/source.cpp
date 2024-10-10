@@ -364,6 +364,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR lpCmdLine, int nShowCmd)
 			ReportError(IDS_EDGE_64BIT_NOT_MATCH);
 		else if (wEdgeBinaryType == IMAGE_FILE_MACHINE_I386)
 			ReportError(IDS_EDGE_32BIT_NOT_MATCH);
+		else if (wEdgeBinaryType == IMAGE_FILE_MACHINE_ARM64)
+			ReportError(IDS_EDGE_ARM64_NOT_MATCH);
 		else
 			ReportError(IDS_EDGE_UNKNOWN_BIN_TYPE);
 		return HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT);
